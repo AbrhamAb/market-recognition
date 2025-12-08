@@ -1,0 +1,24 @@
+__pycache__/
+.venv/
+venv/
+env/
+*.pyc
+*.pyo
+*.pyd
+*.h5
+*.db
+/*.log
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Data and trained artifacts
+/dataset/
+/model/product_classifier/
+/model/product_classifier.keras
+/model/product_classifier.h5
+/model/*.pb
+/model/variables/
+
+# Editor-specific
+market-recognition/.venv
