@@ -9,16 +9,21 @@ Edit the PRICES dict below to match your classes.
 from . import database
 
 PRICES = {
-    "banana": (15, 20, "birr/kg"),
-    "garlic": (50, 70, "birr/kg"),
-    "red_onion": (28, 35, "birr/kg"),
-    "berbere": (250, 300, "birr/kg"),
-    "coffee_beans": (90, 120, "birr/kg"),
-    "injera": (18, 25, "birr/pc"),
-    "lentils": (60, 80, "birr/kg"),
-    "tomato": (20, 30, "birr/kg"),
-    "shiro": (120, 160, "birr/kg"),
-    "teff": (70, 95, "birr/kg"),
+    "bean": (30, 45, "birr/kg"),
+    "bitter_gourd": (35, 50, "birr/kg"),
+    "bottle_gourd": (25, 40, "birr/kg"),
+    "brinjal": (28, 42, "birr/kg"),
+    "broccoli": (55, 75, "birr/kg"),
+    "cabbage": (18, 28, "birr/kg"),
+    "capsicum": (45, 65, "birr/kg"),
+    "carrot": (26, 38, "birr/kg"),
+    "cauliflower": (35, 55, "birr/kg"),
+    "cucumber": (20, 32, "birr/kg"),
+    "papaya": (22, 34, "birr/kg"),
+    "potato": (24, 34, "birr/kg"),
+    "pumpkin": (20, 32, "birr/kg"),
+    "radish": (18, 28, "birr/kg"),
+    "tomato": (22, 30, "birr/kg"),
 }
 
 

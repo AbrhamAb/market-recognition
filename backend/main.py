@@ -6,6 +6,7 @@ import os
 import datetime
 import numpy as np
 from PIL import Image
+import tensorflow as tf
 from tensorflow.keras.models import load_model
 from . import database
 from .price_engine import fetch_price_for_item, update_price
@@ -27,49 +28,67 @@ MODEL_DIR = os.path.abspath(os.path.join(
 MODEL_PATH = os.path.join(MODEL_DIR, "product_classifier")
 LABELS_PATH = os.path.join(MODEL_DIR, "labels.txt")
 IMG_SIZE = (224, 224)
+CONF_THRESHOLD = 0.5
 
 _model = None
 _labels = []
 
 
-def dummy_predict(image: Image.Image):
-    # Very simple stub — replace with real model inference later.
-    # For now, return a fixed label based on image size or other simple heuristic.
+def dummy_predict(image: Image.Image, top_k: int = 3):
+    # Simple stub used when a trained model is unavailable.
     w, h = image.size
-    if w > h:
-        return {"label": "banana", "confidence": 0.87}
-    return {"label": "garlic", "confidence": 0.92}
+    best = ("banana", 0.87) if w > h else ("garlic", 0.92)
+    fallback = [
+        {"label": best[0], "confidence": best[1]},
+        {"label": "tomato", "confidence": 0.22},
+        {"label": "potato", "confidence": 0.18},
+    ]
+    return {"label": best[0], "confidence": best[1], "top_k": fallback[:top_k]}
 
 
 def load_model_and_labels():
-    """Load SavedModel and labels if available. Returns True if loaded."""
+    """Load model (keras .keras/.h5 or SavedModel via TFSMLayer) and labels."""
     global _model, _labels
     if _model is not None and _labels:
         return True
     if not os.path.exists(MODEL_PATH):
         return False
-    _model = load_model(MODEL_PATH)
+    try:
+        _model = load_model(MODEL_PATH)  # handles .keras / .h5
+    except Exception:
+        # Fall back to SavedModel directory using TFSMLayer (Keras 3 path)
+        _model = tf.keras.layers.TFSMLayer(
+            MODEL_PATH, call_endpoint="serving_default")
     if os.path.exists(LABELS_PATH):
         with open(LABELS_PATH, "r", encoding="utf-8") as f:
             _labels = [line.strip() for line in f.readlines() if line.strip()]
     return _model is not None
 
 
-def predict_image(image: Image.Image):
+def predict_image(image: Image.Image, top_k: int = 3):
     """Run model inference; fall back to dummy if model unavailable."""
     global _model, _labels
     if _model is None:
         loaded = load_model_and_labels()
         if not loaded:
-            return dummy_predict(image)
+            return dummy_predict(image, top_k=top_k)
     img = image.resize(IMG_SIZE)
     arr = np.array(img).astype("float32") / 255.0
     arr = np.expand_dims(arr, 0)
-    preds = _model.predict(arr, verbose=0)[0]
-    idx = int(np.argmax(preds))
-    label = _labels[idx] if idx < len(_labels) else str(idx)
-    conf = float(preds[idx])
-    return {"label": label, "confidence": conf}
+    if isinstance(_model, tf.keras.layers.TFSMLayer):
+        outputs = _model(arr)
+        if isinstance(outputs, dict):
+            outputs = list(outputs.values())[0]
+        preds = outputs.numpy()[0]
+    else:
+        preds = _model.predict(arr, verbose=0)[0]
+    order = np.argsort(preds)[::-1]
+    ranked = []
+    for idx in order[:top_k]:
+        label = _labels[idx] if idx < len(_labels) else str(idx)
+        ranked.append({"label": label, "confidence": float(preds[idx])})
+    best = ranked[0] if ranked else {"label": "unknown", "confidence": 0.0}
+    return {"label": best["label"], "confidence": best["confidence"], "top_k": ranked}
 
 
 @app.get("/health")
@@ -103,10 +122,13 @@ async def predict(file: UploadFile = File(...), vendor_id: str = Form("unknown")
         "transaction_id": txn_id,
         "item": label,
         "confidence": conf,
+        "low_confidence": conf < CONF_THRESHOLD,
+        "top_k": res.get("top_k", []),
         "qty": qty,
         "price_per_unit": price,
         "unit": unit,
         "total": total,
+        "price_available": price_info is not None,
         "payment_options": ["Telebirr", "CBE Birr", "Amole", "M-Pesa Ethiopia"]
     })
 
