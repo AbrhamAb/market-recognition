@@ -43,9 +43,8 @@ class MarketRecApp extends StatelessWidget {
             seedColor: warmGreen,
             primary: warmGreen,
             secondary: goldenYellow,
-            background: sand,
             surface: Colors.white,
-          ).copyWith(onPrimary: Colors.white, onBackground: darkText),
+          ).copyWith(onPrimary: Colors.white, onSurface: darkText),
           appBarTheme: const AppBarTheme(
             backgroundColor: sand,
             foregroundColor: darkText,
@@ -74,7 +73,7 @@ class MarketRecApp extends StatelessWidget {
           chipTheme: ChipThemeData(
             backgroundColor: const Color(0xFFEAE3D5),
             labelStyle: const TextStyle(color: darkText),
-            selectedColor: warmGreen.withOpacity(0.12),
+            selectedColor: warmGreen.withAlpha((0.12 * 255).round()),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -372,9 +371,10 @@ class _ScanScreenState extends State<ScanScreen> {
                     result: state.result!,
                     saving: state.saving,
                     onAccept: () async {
+                      final messenger = ScaffoldMessenger.of(context);
                       final added = await state.acceptCurrentResult();
                       if (added && mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        messenger.showSnackBar(
                           const SnackBar(content: Text('Saved to history')),
                         );
                       }
@@ -392,7 +392,7 @@ class _ScanScreenState extends State<ScanScreen> {
           if (state.busy)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withOpacity(0.12),
+                color: Colors.black.withAlpha((0.12 * 255).round()),
               ),
             ),
           if (!hasImage)
@@ -437,7 +437,8 @@ class ResultCard extends StatelessWidget {
     final qty = (result['qty'] as num?)?.toDouble();
     final unit = (result['unit'] ?? '').toString();
     final topK = ((result['top_k'] as List?) ?? []).whereType<Map>().toList();
-    final handleAccept = () async {
+
+    Future<void> handleAccept() async {
       if (saving) return;
       if (low) {
         final confirm = await showDialog<bool>(
@@ -464,7 +465,7 @@ class ResultCard extends StatelessWidget {
         if (confirm != true) return;
       }
       await onAccept();
-    };
+    }
 
     return Stack(
       children: [
@@ -493,9 +494,7 @@ class ResultCard extends StatelessWidget {
                     ),
                   ),
                   _ConfidenceChip(
-                      label: confidenceLabel,
-                      confidence: confidence,
-                      low: low),
+                      label: confidenceLabel, confidence: confidence, low: low),
                 ],
               ),
               const SizedBox(height: 8),
@@ -535,8 +534,8 @@ class ResultCard extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: topK
-                      .map((e) => Chip(
-                          label: Text((e['label'] ?? '').toString())))
+                      .map((e) =>
+                          Chip(label: Text((e['label'] ?? '').toString())))
                       .toList(),
                 ),
               ],
@@ -557,7 +556,7 @@ class ResultCard extends StatelessWidget {
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.72),
+                color: Colors.white.withAlpha((0.72 * 255).round()),
                 borderRadius: BorderRadius.circular(18),
               ),
               child: const Center(
@@ -601,18 +600,18 @@ class HistoryScreen extends StatelessWidget {
           ],
         ),
         body: state.loadingHistory
-          ? const Center(child: CircularProgressIndicator())
-          : history.isEmpty
-            ? const _EmptyState()
-            : ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: history.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final record = history[index];
-                  return _HistoryTile(record: record);
-                },
-              ),
+            ? const Center(child: CircularProgressIndicator())
+            : history.isEmpty
+                ? const _EmptyState()
+                : ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: history.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final record = history[index];
+                      return _HistoryTile(record: record);
+                    },
+                  ),
       ),
     );
   }
@@ -834,9 +833,9 @@ class _ConfidenceChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withAlpha((0.12 * 255).round()),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.6)),
+        border: Border.all(color: color.withAlpha((0.6 * 255).round())),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -943,7 +942,7 @@ class _TextilePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = darkText.withOpacity(0.04)
+      ..color = darkText.withAlpha((0.04 * 255).round())
       ..strokeWidth = 1;
     const double step = 24;
     for (double y = 0; y < size.height; y += step) {
@@ -969,7 +968,7 @@ class PatternDivider extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             Colors.transparent,
-            darkText.withOpacity(0.08),
+            darkText.withAlpha((0.08 * 255).round()),
             Colors.transparent,
           ],
         ),

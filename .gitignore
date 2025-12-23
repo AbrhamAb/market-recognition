@@ -22,3 +22,5 @@ env/
 
 # Editor-specific
 market-recognition/.venv
+
+.vscode/

@@ -1,0 +1,12 @@
+{
+    "executionEnvironments": [
+        {
+            "root": "./",
+            "pythonVersion": "3.11",
+            "extraPaths": [
+                "C:/Users/mommy/Miniconda3/envs/marketrec/Lib/site-packages"
+            ]
+        }
+    ],
+    "reportMissingImports": false
+}

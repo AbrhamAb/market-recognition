@@ -1,3 +1,6 @@
+from .profit_module import compute_vendor_summary
+from .price_engine import fetch_price_for_item, update_price
+from . import database
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,9 +11,11 @@ import numpy as np
 from PIL import Image
 import tensorflow as tf
 from tensorflow.keras.models import load_model
-from . import database
-from .price_engine import fetch_price_for_item, update_price
-from .profit_module import compute_vendor_summary
+from typing import Optional, Any, cast
+
+# Some static analyzers (Pyright/Pylance) have trouble resolving `tf.keras`.
+# Expose `keras` alias and ignore attribute warnings so editor analysis is satisfied.
+keras = getattr(tf, "keras", None)  # type: ignore[attr-defined]
 
 app = FastAPI(title="Market Recognition API")
 
@@ -29,6 +34,8 @@ MODEL_PATH = os.path.join(MODEL_DIR, "product_classifier")
 LABELS_PATH = os.path.join(MODEL_DIR, "labels.txt")
 IMG_SIZE = (224, 224)
 CONF_THRESHOLD = 0.5
+
+UNKNOWN_LABEL = "unknown"
 
 _model = None
 _labels = []
@@ -56,9 +63,17 @@ def load_model_and_labels():
     try:
         _model = load_model(MODEL_PATH)  # handles .keras / .h5
     except Exception:
-        # Fall back to SavedModel directory using TFSMLayer (Keras 3 path)
-        _model = tf.keras.layers.TFSMLayer(
-            MODEL_PATH, call_endpoint="serving_default")
+        # Fall back to SavedModel directory using TFSMLayer (Keras 3 path).
+        # Use the `keras` alias and suppress static analyzer unknown-member warnings.
+        # Only attempt TFSMLayer fallback if we have a `keras` namespace.
+        if keras is not None:
+            try:
+                _model = keras.layers.TFSMLayer(
+                    MODEL_PATH, call_endpoint="serving_default")  # type: ignore[attr-defined]
+            except Exception:
+                _model = None
+        else:
+            _model = None
     if os.path.exists(LABELS_PATH):
         with open(LABELS_PATH, "r", encoding="utf-8") as f:
             _labels = [line.strip() for line in f.readlines() if line.strip()]
@@ -72,22 +87,37 @@ def predict_image(image: Image.Image, top_k: int = 3):
         loaded = load_model_and_labels()
         if not loaded:
             return dummy_predict(image, top_k=top_k)
+    # At this point we expect _model to be non-None; help static analyzer.
+    assert _model is not None
     img = image.resize(IMG_SIZE)
     arr = np.array(img).astype("float32") / 255.0
     arr = np.expand_dims(arr, 0)
-    if isinstance(_model, tf.keras.layers.TFSMLayer):
-        outputs = _model(arr)
+    # Handle SavedModel exposed via TFSMLayer or a regular Keras model.
+    # type: ignore[attr-defined]
+    if keras is not None and hasattr(keras, "layers") and hasattr(keras.layers, "TFSMLayer") and isinstance(_model, keras.layers.TFSMLayer):
+        outputs = _model(arr)  # type: ignore[call-arg]
         if isinstance(outputs, dict):
             outputs = list(outputs.values())[0]
         preds = outputs.numpy()[0]
     else:
-        preds = _model.predict(arr, verbose=0)[0]
+        # Cast to a generic Any to satisfy static analysis, then call predict.
+        model_obj = cast(Any, _model)
+        preds = model_obj.predict(arr, verbose=0)[0]
     order = np.argsort(preds)[::-1]
     ranked = []
     for idx in order[:top_k]:
         label = _labels[idx] if idx < len(_labels) else str(idx)
         ranked.append({"label": label, "confidence": float(preds[idx])})
-    best = ranked[0] if ranked else {"label": "unknown", "confidence": 0.0}
+
+    # Simple OOD handling: if top softmax probability is below threshold,
+    # return an explicit `unknown` label. This is a lightweight mitigation
+    # for out-of-distribution inputs (faces, unrelated images, etc.).
+    top_idx = int(order[0]) if order.size > 0 else None
+    top_prob = float(preds[top_idx]) if top_idx is not None else 0.0
+    if top_prob < CONF_THRESHOLD:
+        return {"label": UNKNOWN_LABEL, "confidence": top_prob, "top_k": ranked}
+
+    best = ranked[0] if ranked else {"label": UNKNOWN_LABEL, "confidence": 0.0}
     return {"label": best["label"], "confidence": best["confidence"], "top_k": ranked}
 
 
@@ -148,6 +178,6 @@ async def set_price(item_key: str, min_price: float = Form(...), max_price: floa
 
 
 @app.get("/vendor/{vendor_id}/summary")
-async def vendor_summary(vendor_id: str, since: str = None):
+async def vendor_summary(vendor_id: str, since: Optional[str] = None):
     summary = compute_vendor_summary(vendor_id, since)
     return summary

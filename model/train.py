@@ -22,6 +22,10 @@ import os
 import tensorflow as tf
 from tensorflow.keras.applications import MobileNetV2
 from tensorflow.keras import layers, models
+import numpy as np
+# Use the keras namespace from the tensorflow module
+# Pyright/Pylance sometimes can't resolve `tf.keras`; ignore that static warning here
+keras = tf.keras  # type: ignore[attr-defined]
 
 
 def make_parser():
@@ -64,7 +68,7 @@ def build_model(num_classes, img_size, learning_rate=1e-3, fine_tune=False):
     model = models.Model(base.input, out)
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
+        optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
         loss="categorical_crossentropy",
         metrics=["accuracy"],
     )
@@ -81,27 +85,40 @@ def main():
         raise FileNotFoundError(
             f"Expected training images under {train_dir}. Create folders like {train_dir}\\banana, {train_dir}\\garlic, etc.")
 
-    train_datagen = tf.keras.preprocessing.image.ImageDataGenerator(
+    # Training data: apply augmentation (from dataset/train)
+    train_datagen = keras.preprocessing.image.ImageDataGenerator(
         rescale=1.0 / 255,
         rotation_range=15,
         width_shift_range=0.1,
         height_shift_range=0.1,
         zoom_range=0.1,
         brightness_range=(0.8, 1.2),
-        validation_split=0.2,
+    )
+
+    # Validation data: only rescale (from dataset/validation)
+    val_datagen = keras.preprocessing.image.ImageDataGenerator(
+        rescale=1.0 / 255,
     )
 
     train_gen = train_datagen.flow_from_directory(
-        train_dir,
+        os.path.join(args.data_dir, "train"),
         target_size=img_size,
         batch_size=batch,
-        subset="training",
+        class_mode="categorical",
+        shuffle=True,
     )
-    val_gen = train_datagen.flow_from_directory(
-        train_dir,
+
+    val_dir = os.path.join(args.data_dir, "validation")
+    if not os.path.isdir(val_dir):
+        raise FileNotFoundError(
+            f"Expected validation images under {val_dir}. Create folders like {val_dir}\\banana, {val_dir}\\garlic, etc.")
+
+    val_gen = val_datagen.flow_from_directory(
+        val_dir,
         target_size=img_size,
         batch_size=batch,
-        subset="validation",
+        class_mode="categorical",
+        shuffle=False,
     )
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -116,18 +133,29 @@ def main():
 
     ckpt_path = os.path.join(args.output_dir, "product_classifier.h5")
     callbacks = [
-        tf.keras.callbacks.ModelCheckpoint(
+        keras.callbacks.ModelCheckpoint(
             ckpt_path, save_best_only=True, monitor="val_accuracy", mode="max"
         ),
-        tf.keras.callbacks.EarlyStopping(
+        keras.callbacks.EarlyStopping(
             patience=5, restore_best_weights=True),
     ]
+
+    # Compute simple class weights to help with imbalance
+    try:
+        counts = np.bincount(train_gen.classes)
+        total = counts.sum()
+        num_classes = len(counts)
+        class_weight = {
+            i: float(total / (num_classes * counts[i])) for i in range(num_classes)}
+    except Exception:
+        class_weight = None
 
     model.fit(
         train_gen,
         validation_data=val_gen,
         epochs=args.epochs,
         callbacks=callbacks,
+        class_weight=class_weight,
     )
 
     # Export SavedModel for deployment (Keras 3 API)
