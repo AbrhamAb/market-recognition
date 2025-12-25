@@ -1,0 +1,257 @@
+{
+  "summary": {
+    "num_samples": 2713,
+    "num_classes": 39,
+    "accuracy_top1": 0.9911537043862882,
+    "accuracy_top5": 0.9996314043494287
+  },
+  "report": {
+    "Bean": {
+      "precision": 0.985981308411215,
+      "recall": 1.0,
+      "f1-score": 0.9929411764705882,
+      "support": 211.0
+    },
+    "Bitter_Gourd": {
+      "precision": 0.9906103286384976,
+      "recall": 1.0,
+      "f1-score": 0.9952830188679245,
+      "support": 211.0
+    },
+    "Bottle_Gourd": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 211.0
+    },
+    "Broccoli": {
+      "precision": 1.0,
+      "recall": 0.990521327014218,
+      "f1-score": 0.9952380952380953,
+      "support": 211.0
+    },
+    "Cabbage": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 211.0
+    },
+    "Capsicum": {
+      "precision": 0.9952830188679245,
+      "recall": 1.0,
+      "f1-score": 0.9976359338061466,
+      "support": 211.0
+    },
+    "Carrot": {
+      "precision": 1.0,
+      "recall": 0.990521327014218,
+      "f1-score": 0.9952380952380953,
+      "support": 211.0
+    },
+    "Cauliflower": {
+      "precision": 1.0,
+      "recall": 0.995260663507109,
+      "f1-score": 0.997624703087886,
+      "support": 211.0
+    },
+    "Cucumber": {
+      "precision": 0.9952380952380953,
+      "recall": 0.990521327014218,
+      "f1-score": 0.9928741092636579,
+      "support": 211.0
+    },
+    "Ketchup": {
+      "precision": 1.0,
+      "recall": 0.75,
+      "f1-score": 0.8571428571428571,
+      "support": 4.0
+    },
+    "Knorr": {
+      "precision": 1.0,
+      "recall": 0.75,
+      "f1-score": 0.8571428571428571,
+      "support": 4.0
+    },
+    "Potato": {
+      "precision": 0.9590909090909091,
+      "recall": 1.0,
+      "f1-score": 0.9791183294663574,
+      "support": 211.0
+    },
+    "Pumpkin": {
+      "precision": 0.995260663507109,
+      "recall": 0.995260663507109,
+      "f1-score": 0.995260663507109,
+      "support": 211.0
+    },
+    "Quaker \u12a0\u1303": {
+      "precision": 1.0,
+      "recall": 0.8333333333333334,
+      "f1-score": 0.9090909090909091,
+      "support": 6.0
+    },
+    "Sunsilk": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 5.0
+    },
+    "Tomato": {
+      "precision": 1.0,
+      "recall": 0.95260663507109,
+      "f1-score": 0.9757281553398058,
+      "support": 211.0
+    },
+    "UNKNOWN": {
+      "precision": 0.9811320754716981,
+      "recall": 1.0,
+      "f1-score": 0.9904761904761905,
+      "support": 52.0
+    },
+    "\u120b\u12ed\u134d \u1266\u12ed \u1233\u1219\u1293": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 7.0
+    },
+    "\u121b\u122d\u121b\u122b\u1273": {
+      "precision": 0.9,
+      "recall": 1.0,
+      "f1-score": 0.9473684210526315,
+      "support": 9.0
+    },
+    "\u121d\u1225\u122d": {
+      "precision": 1.0,
+      "recall": 0.75,
+      "f1-score": 0.8571428571428571,
+      "support": 4.0
+    },
+    "\u1229\u12dd": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 4.0
+    },
+    "\u1236\u134d\u1275": {
+      "precision": 0.8,
+      "recall": 1.0,
+      "f1-score": 0.8888888888888888,
+      "support": 4.0
+    },
+    "\u1260\u1228\u12aa\u1293": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 6.0
+    },
+    "\u126a\u121d": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 4.0
+    },
+    "\u12a6\u121e": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 4.0
+    },
+    "\u12ad\u12ad": {
+      "precision": 0.75,
+      "recall": 1.0,
+      "f1-score": 0.8571428571428571,
+      "support": 3.0
+    },
+    "\u12d8\u12ed\u1275": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 4.0
+    },
+    "\u12e8\u1208\u12cd\u12dd \u1245\u1264": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 9.0
+    },
+    "\u12e8\u123b\u12ed \u1245\u1320\u120d": {
+      "precision": 0.6666666666666666,
+      "recall": 1.0,
+      "f1-score": 0.8,
+      "support": 4.0
+    },
+    "\u12e8\u12a5\u1243 \u12a0\u1303\u12ad\u1235": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 4.0
+    },
+    "\u12e8\u12a5\u1305 \u1233\u1219\u1293": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 8.0
+    },
+    "\u12e8\u1308\u1260\u1273 \u1328\u12cd": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 4.0
+    },
+    "\u12f2\u126b \u12e8\u1328\u122d\u1245 \u1233\u1219\u1293": {
+      "precision": 0.8888888888888888,
+      "recall": 1.0,
+      "f1-score": 0.9411764705882353,
+      "support": 8.0
+    },
+    "\u12f2\u1276\u120d": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 5.0
+    },
+    "\u12f5\u134d\u1295 \u121d\u1225\u122d": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 3.0
+    },
+    "\u12f6\u126d \u1233\u1219\u1293": {
+      "precision": 1.0,
+      "recall": 0.6,
+      "f1-score": 0.75,
+      "support": 5.0
+    },
+    "\u1325\u121d\u12dd\u121d\u12dd \u1218\u12ae\u1228\u1292": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 4.0
+    },
+    "\u1348\u1233\u123d \u12e8\u120d\u1265\u1235 \u1233\u1219\u1293": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 3.0
+    },
+    "\u1353\u1235\u1273": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 4.0
+    },
+    "accuracy": 0.9911537043862882,
+    "macro avg": {
+      "precision": 0.972003896276436,
+      "recall": 0.9640519301656741,
+      "f1-score": 0.9633978099731783,
+      "support": 2713.0
+    },
+    "weighted avg": {
+      "precision": 0.991808189463453,
+      "recall": 0.9911537043862882,
+      "f1-score": 0.9910993566039296,
+      "support": 2713.0
+    }
+  }
+}

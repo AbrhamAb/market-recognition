@@ -246,14 +246,12 @@ class ScanScreen extends StatefulWidget {
 class _ScanScreenState extends State<ScanScreen> {
   final TextEditingController _vendorCtrl =
       TextEditingController(text: 'V0001');
-  final TextEditingController _buyCtrl = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   double _qty = 1.0;
 
   @override
   void dispose() {
     _vendorCtrl.dispose();
-    _buyCtrl.dispose();
     super.dispose();
   }
 
@@ -266,11 +264,9 @@ class _ScanScreenState extends State<ScanScreen> {
 
   Future<void> _runPrediction() async {
     final state = context.read<PredictState>();
-    final buy = double.tryParse(_buyCtrl.text.trim());
     await state.predict(
       vendorId: _vendorCtrl.text.trim(),
       qty: _qty,
-      buyPricePerUnit: buy,
     );
   }
 
@@ -318,17 +314,7 @@ class _ScanScreenState extends State<ScanScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                _InputCard(
-                  label: 'Buy price per unit (optional)',
-                  child: TextField(
-                    controller: _buyCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      hintText: 'e.g. 40.00',
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
+                // Buy price input removed — app uses market prices from backend
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: state.busy ? null : _runPrediction,
@@ -573,31 +559,103 @@ class ResultCard extends StatelessWidget {
   }
 }
 
-class HistoryScreen extends StatelessWidget {
+class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
+
+  @override
+  State<HistoryScreen> createState() => _HistoryScreenState();
+}
+
+class _HistoryScreenState extends State<HistoryScreen> {
+  final Set<int> _selected = <int>{};
+
+  void _toggleSelect(int index) {
+    setState(() {
+      if (_selected.contains(index)) {
+        _selected.remove(index);
+      } else {
+        _selected.add(index);
+      }
+    });
+  }
+
+  void _clearSelection() {
+    setState(() => _selected.clear());
+  }
+
+  Future<void> _confirmAndDelete(BuildContext context) async {
+    final count = _selected.length;
+    if (count == 0) return;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete $count item${count > 1 ? 's' : ''}?'),
+        content:
+            const Text('This will permanently remove the selected records.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    // ignore: use_build_context_synchronously
+    final state = context.read<PredictState>();
+    final indices = _selected.toList();
+    await state.deleteHistory(indices);
+    _clearSelection();
+    if (mounted) {
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Deleted $count record${count > 1 ? 's' : ''}')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<PredictState>();
     final history = state.history;
 
+    final selectionMode = _selected.isNotEmpty;
+
     return SafeArea(
       child: Scaffold(
         backgroundColor: sand,
         appBar: AppBar(
-          title: Row(
-            children: const [
-              Icon(Icons.handshake, color: warmGreen),
-              SizedBox(width: 8),
-              Text(appName),
-            ],
-          ),
-          actions: const [
-            Padding(
-              padding: EdgeInsets.only(right: 12),
-              child: Icon(Icons.search, color: darkText),
-            ),
-          ],
+          title: selectionMode
+              ? Text('${_selected.length} selected')
+              : Row(
+                  children: const [
+                    Icon(Icons.handshake, color: warmGreen),
+                    SizedBox(width: 8),
+                    Text(appName),
+                  ],
+                ),
+          actions: selectionMode
+              ? [
+                  IconButton(
+                    onPressed: () => _clearSelection(),
+                    icon: const Icon(Icons.close, color: darkText),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: IconButton(
+                      onPressed: () => _confirmAndDelete(context),
+                      icon: const Icon(Icons.delete_forever, color: deepRed),
+                    ),
+                  ),
+                ]
+              : const [
+                  Padding(
+                    padding: EdgeInsets.only(right: 12),
+                    child: Icon(Icons.search, color: darkText),
+                  ),
+                ],
         ),
         body: state.loadingHistory
             ? const Center(child: CircularProgressIndicator())
@@ -609,7 +667,17 @@ class HistoryScreen extends StatelessWidget {
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final record = history[index];
-                      return _HistoryTile(record: record);
+                      final selected = _selected.contains(index);
+                      return GestureDetector(
+                        onLongPress: () => _toggleSelect(index),
+                        onTap: () {
+                          if (_selected.isNotEmpty) _toggleSelect(index);
+                        },
+                        child: _HistoryTile(
+                          record: record,
+                          selected: selected,
+                        ),
+                      );
                     },
                   ),
       ),
@@ -621,15 +689,67 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: const [
-        Icon(Icons.handshake, color: warmGreen, size: 26),
-        SizedBox(width: 8),
-        Text(
+      children: [
+        const Icon(Icons.handshake, color: warmGreen, size: 26),
+        const SizedBox(width: 8),
+        const Text(
           appName,
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
         ),
-        Spacer(),
-        Icon(Icons.help_outline, color: midGray),
+        const Spacer(),
+        IconButton(
+          icon: const Icon(Icons.help_outline, color: midGray),
+          onPressed: () => showDialog<void>(
+            context: context,
+            builder: (ctx) => const AppHelpDialog(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class AppHelpDialog extends StatelessWidget {
+  const AppHelpDialog({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                color: warmGreen,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Icon(Icons.handshake, color: Colors.white, size: 44),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              appName,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Fair prices for everyday markets. \n\nTake a photo of an item to get an estimated market price, save transactions to history, and manage them from the History tab.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: midGray),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
       ],
     );
   }
@@ -740,12 +860,16 @@ class _QuantitySelector extends StatelessWidget {
         children: [
           _RoundButton(
             icon: Icons.remove,
-            onTap: () => onChanged((qty - 0.5).clamp(0.5, 9999)),
+            onTap: () => onChanged((qty - 0.25).clamp(0.25, 9999)),
           ),
           Expanded(
             child: Center(
               child: Text(
-                qty % 1 == 0 ? qty.toStringAsFixed(0) : qty.toStringAsFixed(1),
+                qty % 1 == 0
+                    ? qty.toStringAsFixed(0)
+                    : qty % 0.25 == 0
+                        ? qty.toStringAsFixed(2)
+                        : qty.toStringAsFixed(2),
                 style:
                     const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
               ),
@@ -753,7 +877,7 @@ class _QuantitySelector extends StatelessWidget {
           ),
           _RoundButton(
             icon: Icons.add,
-            onTap: () => onChanged((qty + 0.5).clamp(0.5, 9999)),
+            onTap: () => onChanged((qty + 0.25).clamp(0.25, 9999)),
           ),
           const SizedBox(width: 8),
           const Text('kg', style: TextStyle(color: midGray)),
@@ -851,18 +975,21 @@ class _ConfidenceChip extends StatelessWidget {
 }
 
 class _HistoryTile extends StatelessWidget {
-  const _HistoryTile({required this.record});
+  const _HistoryTile({required this.record, this.selected = false});
 
   final PredictionRecord record;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:
+            selected ? warmGreen.withAlpha((0.06 * 255).round()) : Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE4DECF)),
+        border:
+            Border.all(color: selected ? warmGreen : const Color(0xFFE4DECF)),
       ),
       child: Row(
         children: [
@@ -901,7 +1028,9 @@ class _HistoryTile extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: midGray),
+          selected
+              ? Icon(Icons.check_circle, color: warmGreen)
+              : const Icon(Icons.chevron_right, color: midGray),
         ],
       ),
     );

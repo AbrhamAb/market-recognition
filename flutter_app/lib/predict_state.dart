@@ -79,9 +79,8 @@ class PredictionRecord {
     final confidence = (map['confidence'] as num?)?.toDouble() ?? 0.0;
     final unit = (map['unit'] ?? '').toString();
     final item = (map['item'] ?? 'Unknown item').toString();
-    final suggestions = ((map['suggestions'] as List?) ?? [])
-        .whereType<String>()
-        .toList();
+    final suggestions =
+        ((map['suggestions'] as List?) ?? []).whereType<String>().toList();
     final tsString = (map['timestamp'] ?? '').toString();
     final timestamp = DateTime.tryParse(tsString) ?? DateTime.now();
     final imagePath = (map['image_path'] ?? '') as String?;
@@ -122,9 +121,7 @@ class PredictState extends ChangeNotifier {
     history
       ..clear()
       ..addAll(
-        stored
-            .map((e) => PredictionRecord.fromMap(e))
-            .toList(growable: false),
+        stored.map((e) => PredictionRecord.fromMap(e)).toList(growable: false),
       );
     loadingHistory = false;
     notifyListeners();
@@ -158,6 +155,21 @@ class PredictState extends ChangeNotifier {
       saving = false;
       notifyListeners();
     }
+  }
+
+  /// Delete stored history records at the provided indices (newest-first order).
+  Future<void> deleteHistory(List<int> indices) async {
+    if (indices.isEmpty) return;
+    // Update persistent store first
+    await _historyStore.deleteRecords(indices);
+
+    // Remove from in-memory list (ensure descending order to avoid shifting)
+    final unique = indices.toSet().where((i) => i >= 0).toList();
+    unique.sort((a, b) => b.compareTo(a));
+    for (final idx in unique) {
+      if (idx < history.length) history.removeAt(idx);
+    }
+    notifyListeners();
   }
 
   Future<void> predict({

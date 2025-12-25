@@ -1,0 +1,281 @@
+{
+  "total_samples": 2674,
+  "known_count": 2668,
+  "accuracy_known": 0.9996251874062968,
+  "accuracy_overall": 0.9973821989528796,
+  "per_class": {
+    "Bean": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 210
+    },
+    "Bitter_Gourd": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 210
+    },
+    "Bottle_Gourd": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 210
+    },
+    "Broccoli": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 210
+    },
+    "Cabbage": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 210
+    },
+    "Capsicum": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 210
+    },
+    "Carrot": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 210
+    },
+    "Cauliflower": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 210
+    },
+    "Cucumber": {
+      "threshold": 0.9500000000000001,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 210
+    },
+    "Ketchup": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "Knorr": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "Potato": {
+      "threshold": 0.91,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 210
+    },
+    "Pumpkin": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 0.9904761904761905,
+      "f1": 0.9952153110047847,
+      "support": 210
+    },
+    "Quaker \u12a0\u1303": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 4
+    },
+    "Sunsilk": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "Tomato": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 0.9857142857142858,
+      "f1": 0.9928057553956835,
+      "support": 210
+    },
+    "UNKNOWN": {
+      "threshold": 0.62,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 53
+    },
+    "\u120b\u12ed\u134d \u1266\u12ed \u1233\u1219\u1293": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 6
+    },
+    "\u121b\u122d\u121b\u122b\u1273": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 9
+    },
+    "\u121d\u1225\u122d": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "\u1229\u12dd": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 2
+    },
+    "\u1236\u134d\u1275": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "\u1260\u1228\u12aa\u1293": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 0.6,
+      "f1": 0.7499999999999999,
+      "support": 5
+    },
+    "\u126a\u121d": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "\u12a6\u121e": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "\u12ad\u12ad": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "\u12d8\u12ed\u1275": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "\u12e8\u1208\u12cd\u12dd \u1245\u1264": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 7
+    },
+    "\u12e8\u123b\u12ed \u1245\u1320\u120d": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "\u12e8\u12a5\u1243 \u12a0\u1303\u12ad\u1235": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "\u12e8\u12a5\u1305 \u1233\u1219\u1293": {
+      "threshold": 0.0,
+      "precision": 0.875,
+      "recall": 1.0,
+      "f1": 0.9333333333333333,
+      "support": 7
+    },
+    "\u12e8\u1308\u1260\u1273 \u1328\u12cd": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "\u12f2\u126b \u12e8\u1328\u122d\u1245 \u1233\u1219\u1293": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 6
+    },
+    "\u12f2\u1276\u120d": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 4
+    },
+    "\u12f5\u134d\u1295 \u121d\u1225\u122d": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "\u12f6\u126d \u1233\u1219\u1293": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "\u1325\u121d\u12dd\u121d\u12dd \u1218\u12ae\u1228\u1292": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "\u1348\u1233\u123d \u12e8\u120d\u1265\u1235 \u1233\u1219\u1293": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "\u1353\u1235\u1273": {
+      "threshold": 0.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    }
+  }
+}

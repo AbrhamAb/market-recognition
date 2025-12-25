@@ -51,10 +51,20 @@ def insert_price(item_key, min_price, max_price, unit="birr/kg"):
 def get_price(item_key):
     conn = get_conn()
     c = conn.cursor()
+    # Try exact match first
     c.execute(
         "SELECT min_price, max_price, unit FROM prices WHERE item_key = ?", (item_key,))
     row = c.fetchone()
-    conn.close()
+    if row:
+        conn.close()
+        return {"min": row[0], "max": row[1], "unit": row[2]}
+    # Fallback: case-insensitive search using LOWER()
+    try:
+        c.execute(
+            "SELECT min_price, max_price, unit FROM prices WHERE LOWER(item_key) = ?", (item_key.lower(),))
+        row = c.fetchone()
+    finally:
+        conn.close()
     if row:
         return {"min": row[0], "max": row[1], "unit": row[2]}
     return None

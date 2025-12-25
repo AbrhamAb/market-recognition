@@ -28,12 +28,55 @@ app.add_middleware(
 )
 
 
-MODEL_DIR = os.path.abspath(os.path.join(
+MODEL_ROOT = os.path.abspath(os.path.join(
     os.path.dirname(__file__), "..", "model"))
-MODEL_PATH = os.path.join(MODEL_DIR, "product_classifier")
-LABELS_PATH = os.path.join(MODEL_DIR, "labels.txt")
+# Optional override: set the subdirectory name under `model/` or an absolute path
+MODEL_RUN_DIR = os.environ.get("MODEL_RUN_DIR", "")
 IMG_SIZE = (224, 224)
-CONF_THRESHOLD = 0.5
+CONF_THRESHOLD = float(os.environ.get("MODEL_CONF_THRESHOLD", 0.5))
+
+
+def find_model_paths():
+    """Return (model_path, labels_path).
+    Search `MODEL_ROOT` for the most recent run containing `labels.txt` and a
+    `product_classifier` artifact. If `MODEL_RUN_DIR` is set, prefer that.
+    """
+    # If override provided, use it (absolute or relative to MODEL_ROOT)
+    if MODEL_RUN_DIR:
+        base = MODEL_RUN_DIR if os.path.isabs(
+            MODEL_RUN_DIR) else os.path.join(MODEL_ROOT, MODEL_RUN_DIR)
+        cand_model = os.path.join(base, "product_classifier")
+        cand_k = os.path.join(base, "product_classifier.keras")
+        cand_h5 = os.path.join(base, "product_classifier.h5")
+        cand_labels = os.path.join(base, "labels.txt")
+        if os.path.exists(cand_labels) and (os.path.exists(cand_model) or os.path.exists(cand_k) or os.path.exists(cand_h5)):
+            return cand_model, cand_labels
+
+    # Scan for candidate run folders under MODEL_ROOT
+    if os.path.isdir(MODEL_ROOT):
+        candidates = []
+        for entry in os.listdir(MODEL_ROOT):
+            p = os.path.join(MODEL_ROOT, entry)
+            if not os.path.isdir(p):
+                continue
+            labels = os.path.join(p, "labels.txt")
+            modeldir = os.path.join(p, "product_classifier")
+            kpath = os.path.join(p, "product_classifier.keras")
+            h5 = os.path.join(p, "product_classifier.h5")
+            if os.path.exists(labels) and (os.path.exists(modeldir) or os.path.exists(kpath) or os.path.exists(h5)):
+                # Use modification time to pick latest
+                candidates.append((p, os.path.getmtime(p)))
+        if candidates:
+            candidates.sort(key=lambda x: x[1], reverse=True)
+            chosen = candidates[0][0]
+            return os.path.join(chosen, "product_classifier"), os.path.join(chosen, "labels.txt")
+
+    # Fallback to the legacy location under MODEL_ROOT
+    return os.path.join(MODEL_ROOT, "product_classifier"), os.path.join(MODEL_ROOT, "labels.txt")
+
+
+# Initialize model paths (may be updated at load time)
+MODEL_PATH, LABELS_PATH = find_model_paths()
 
 UNKNOWN_LABEL = "unknown"
 
@@ -56,6 +99,9 @@ def dummy_predict(image: Image.Image, top_k: int = 3):
 def load_model_and_labels():
     """Load model (keras .keras/.h5 or SavedModel via TFSMLayer) and labels."""
     global _model, _labels
+    # refresh model/labels paths in case files were added/deployed while server running
+    global MODEL_PATH, LABELS_PATH
+    MODEL_PATH, LABELS_PATH = find_model_paths()
     if _model is not None and _labels:
         return True
     if not os.path.exists(MODEL_PATH):
@@ -129,6 +175,30 @@ async def health():
 @app.on_event("startup")
 async def startup_event():
     load_model_and_labels()
+
+
+@app.get("/model/info")
+async def model_info():
+    """Return loaded model path, label count and configuration."""
+    loaded = load_model_and_labels()
+    return {
+        "loaded": bool(loaded),
+        "model_path": MODEL_PATH,
+        "labels_path": LABELS_PATH,
+        "num_labels": len(_labels) if _labels else 0,
+        "conf_threshold": CONF_THRESHOLD,
+    }
+
+
+@app.post("/model/reload")
+async def model_reload():
+    """Reload model and labels from disk (useful after deployment)."""
+    # clear cached model so load_model_and_labels performs fresh load
+    global _model, _labels
+    _model = None
+    _labels = []
+    ok = load_model_and_labels()
+    return {"reloaded": bool(ok), "model_path": MODEL_PATH}
 
 
 @app.post("/predict")

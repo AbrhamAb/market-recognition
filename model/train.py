@@ -22,10 +22,13 @@ import os
 import tensorflow as tf
 from tensorflow.keras.applications import MobileNetV2
 from tensorflow.keras import layers, models
+import tensorflow.keras as keras
+from tensorflow.keras.preprocessing.image import img_to_array, load_img
 import numpy as np
-# Use the keras namespace from the tensorflow module
-# Pyright/Pylance sometimes can't resolve `tf.keras`; ignore that static warning here
-keras = tf.keras  # type: ignore[attr-defined]
+import math
+import random
+from tensorflow.keras.utils import Sequence
+# use explicit keras namespace
 
 
 def make_parser():
@@ -39,7 +42,14 @@ def make_parser():
     p.add_argument("--epochs", type=int, default=10)
     p.add_argument("--fine-tune", action="store_true",
                    help="Unfreeze base model for fine-tuning")
+    p.add_argument("--patience", type=int, default=3,
+                   help="EarlyStopping patience in epochs (restore best weights)")
     p.add_argument("--learning-rate", type=float, default=1e-3)
+    p.add_argument("--target-percentile", type=float, default=0.8,
+                   help="Percentile of class counts to use as target per-class (0-1)."
+                   )
+    p.add_argument("--max-repeats-per-image", type=int, default=10,
+                   help="Cap how many times a single source image may be repeated per epoch.")
     return p
 
 
@@ -85,7 +95,7 @@ def main():
         raise FileNotFoundError(
             f"Expected training images under {train_dir}. Create folders like {train_dir}\\banana, {train_dir}\\garlic, etc.")
 
-    # Training data: apply augmentation (from dataset/train)
+    # Training data: augmentation parameters (applied on-the-fly)
     train_datagen = keras.preprocessing.image.ImageDataGenerator(
         rescale=1.0 / 255,
         rotation_range=15,
@@ -100,32 +110,130 @@ def main():
         rescale=1.0 / 255,
     )
 
-    train_gen = train_datagen.flow_from_directory(
-        os.path.join(args.data_dir, "train"),
-        target_size=img_size,
-        batch_size=batch,
-        class_mode="categorical",
-        shuffle=True,
-    )
+    # Build class list and mapping from train folder so labels/order are deterministic
+    train_root = os.path.join(args.data_dir, "train")
+    classes = [d for d in sorted(os.listdir(train_root)) if os.path.isdir(
+        os.path.join(train_root, d))]
+    if not classes:
+        raise FileNotFoundError(
+            f"No class subfolders found under {train_root}")
+    class_indices = {cls: i for i, cls in enumerate(classes)}
+
+    # Inspect class counts and pick a sensible target to avoid excessive repetition
+    counts = [len([f for f in os.listdir(os.path.join(train_root, c)) if f.lower(
+    ).endswith((".jpg", ".jpeg", ".png"))]) for c in classes]
+    max_count = max(counts)
+    min_count = min(counts)
+    # percentile-based target (e.g., 0.8 => 80th percentile)
+    pct = float(args.target_percentile)
+    pct = min(max(pct, 0.0), 1.0)
+    pct_val = int(np.percentile(counts, pct * 100.0))
+    # cap target at max_count and ensure at least min_count
+    target_default = max(min(pct_val, max_count), min_count)
+    # apply a soft cap to avoid enormous repetition; allow CLI override via max_repeats_per_image
+    max_repeats = int(args.max_repeats_per_image)
+    # compute global allowed target considering per-image repeat cap
+    # for each class, allowed_target = min(target_default, len(files)*max_repeats)
+
+    class BalancedSequence(Sequence):
+        def __init__(self, root, classes, class_indices, datagen, img_size, batch_size, target=None, seed=42):
+            self.root = root
+            self.classes = classes
+            self.class_indices = class_indices
+            self.datagen = datagen
+            self.img_size = tuple(img_size)
+            self.batch_size = batch_size
+            self.seed = seed
+
+            # gather filepaths per class
+            self.files_by_class = {}
+            for cls in classes:
+                p = os.path.join(root, cls)
+                files = [os.path.join(p, f) for f in os.listdir(
+                    p) if f.lower().endswith((".jpg", ".jpeg", ".png"))]
+                self.files_by_class[cls] = files
+
+            counts = [len(self.files_by_class[c]) for c in classes]
+            if any(c == 0 for c in counts):
+                raise FileNotFoundError(
+                    "One or more classes contain no images; please check dataset/train/ structure")
+
+            self.max_count = max(counts)
+            # initial target candidate
+            self.target = target or self.max_count
+            # enforce per-image repeat cap: do not request more than len(files)*max_repeats for each class
+            self.max_repeats = max_repeats
+            self.num_classes = len(classes)
+            self.samples = self.target * self.num_classes
+            self._build_epoch_list()
+
+        def _build_epoch_list(self):
+            # Build a list of (filepath, class_index) of length self.samples
+            rnd = random.Random(self.seed)
+            epoch_list = []
+            for cls in self.classes:
+                files = self.files_by_class[cls]
+                # enforce per-class allowed target
+                allowed = min(self.target, len(files) * self.max_repeats)
+                need = int(allowed)
+                # sample with replacement if need > available
+                chosen = [rnd.choice(files) for _ in range(need)]
+                epoch_list.extend([(p, self.class_indices[cls])
+                                  for p in chosen])
+            rnd.shuffle(epoch_list)
+            self.epoch_list = epoch_list
+            # update samples to actual epoch list length (handles caps)
+            self.samples = len(self.epoch_list)
+
+        def __len__(self):
+            # number of batches for the current epoch list
+            return int(math.ceil(len(self.epoch_list) / float(self.batch_size)))
+
+        def __getitem__(self, idx):
+            start = idx * self.batch_size
+            end = min(start + self.batch_size, self.samples)
+            batch_items = self.epoch_list[start:end]
+            batch_x = np.zeros(
+                (len(batch_items), self.img_size[0], self.img_size[1], 3), dtype=np.float32)
+            batch_y = np.zeros(
+                (len(batch_items), self.num_classes), dtype=np.float32)
+            for i, (path, cls_idx) in enumerate(batch_items):
+                img = load_img(path, target_size=self.img_size)
+                arr = img_to_array(img)
+                # apply random transform + standardize
+                arr = self.datagen.random_transform(arr)
+                arr = self.datagen.standardize(arr)
+                batch_x[i] = arr
+                batch_y[i, cls_idx] = 1.0
+            return batch_x, batch_y
+
+        def on_epoch_end(self):
+            # regenerate and reshuffle epoch list to provide fresh sampling
+            self._build_epoch_list()
+
+    train_seq = BalancedSequence(
+        train_root, classes, class_indices, train_datagen, img_size, batch)
 
     val_dir = os.path.join(args.data_dir, "validation")
     if not os.path.isdir(val_dir):
         raise FileNotFoundError(
             f"Expected validation images under {val_dir}. Create folders like {val_dir}\\banana, {val_dir}\\garlic, etc.")
 
+    # Ensure validation generator uses the same class ordering
     val_gen = val_datagen.flow_from_directory(
         val_dir,
         target_size=img_size,
         batch_size=batch,
         class_mode="categorical",
         shuffle=False,
+        classes=classes,
     )
 
     os.makedirs(args.output_dir, exist_ok=True)
-    labels_path = save_labels(train_gen.class_indices, args.output_dir)
+    labels_path = save_labels(class_indices, args.output_dir)
 
     model = build_model(
-        num_classes=train_gen.num_classes,
+        num_classes=len(classes),
         img_size=img_size,
         learning_rate=args.learning_rate,
         fine_tune=args.fine_tune,
@@ -137,25 +245,15 @@ def main():
             ckpt_path, save_best_only=True, monitor="val_accuracy", mode="max"
         ),
         keras.callbacks.EarlyStopping(
-            patience=5, restore_best_weights=True),
+            patience=args.patience, restore_best_weights=True),
     ]
 
-    # Compute simple class weights to help with imbalance
-    try:
-        counts = np.bincount(train_gen.classes)
-        total = counts.sum()
-        num_classes = len(counts)
-        class_weight = {
-            i: float(total / (num_classes * counts[i])) for i in range(num_classes)}
-    except Exception:
-        class_weight = None
-
+    # When using a balanced on-the-fly generator, class_weight is not necessary
     model.fit(
-        train_gen,
+        train_seq,
         validation_data=val_gen,
         epochs=args.epochs,
         callbacks=callbacks,
-        class_weight=class_weight,
     )
 
     # Export SavedModel for deployment (Keras 3 API)

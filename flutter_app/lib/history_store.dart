@@ -28,4 +28,25 @@ class HistoryStore {
         .toList();
     _box!.put(_recordsKey, [record, ...existing]);
   }
+
+  /// Delete records at the given list of indices (indices correspond to
+  /// the order returned by `loadRecords()` — newest first).
+  Future<void> deleteRecords(List<int> indices) async {
+    await init();
+    final existing = (_box!.get(_recordsKey, defaultValue: const []) as List)
+        .toList(growable: true);
+    if (existing.isEmpty) return;
+    final unique = indices.toSet().where((i) => i >= 0).toList();
+    unique.sort((a, b) => b.compareTo(a));
+    for (final idx in unique) {
+      if (idx < existing.length) existing.removeAt(idx);
+    }
+    await _box!.put(_recordsKey, existing);
+  }
+
+  /// Clear all stored history records.
+  Future<void> clearAll() async {
+    await init();
+    await _box!.put(_recordsKey, <dynamic>[]);
+  }
 }

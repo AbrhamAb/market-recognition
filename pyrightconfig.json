@@ -8,5 +8,11 @@
             ]
         }
     ],
-    "reportMissingImports": false
+    "reportMissingImports": false,
+    "exclude": [
+        "tools/compute_thresholds.py"
+    ],
+    "typeStubSearchPaths": [
+        "./typings"
+    ]
 }
