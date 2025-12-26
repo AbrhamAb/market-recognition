@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import 'api_client.dart';
 import 'history_store.dart';
+import 'tflite_classifier.dart';
 
 class PredictionRecord {
   PredictionRecord({
@@ -113,6 +114,8 @@ class PredictState extends ChangeNotifier {
   bool loadingHistory = true;
   Map<String, dynamic>? result;
   String? error;
+  bool useOnDevice = false;
+  final TFLiteClassifier _classifier = TFLiteClassifier();
   final List<PredictionRecord> history = [];
 
   Future<void> _init() async {
@@ -124,6 +127,10 @@ class PredictState extends ChangeNotifier {
         stored.map((e) => PredictionRecord.fromMap(e)).toList(growable: false),
       );
     loadingHistory = false;
+    // Try to load on-device model if present (non-blocking)
+    try {
+      await _classifier.load();
+    } catch (_) {}
     notifyListeners();
   }
 
@@ -187,17 +194,60 @@ class PredictState extends ChangeNotifier {
     result = null;
     notifyListeners();
     try {
-      result = await _apiClient.predict(
-        image: image!,
-        vendorId: vendorId.isEmpty ? 'unknown' : vendorId,
-        qty: qty,
-        buyPricePerUnit: buyPricePerUnit,
-      );
+      if (useOnDevice && _classifier.isLoaded) {
+        final top = _classifier.predict(image!, topK: 3);
+        final item = top.isNotEmpty ? top[0]['label'] as String : 'unknown';
+        final conf =
+            top.isNotEmpty ? (top[0]['confidence'] as num).toDouble() : 0.0;
+        final priceInfo = await _apiClient.getPrice(item);
+        final price =
+            priceInfo != null ? (priceInfo['min'] as num?)?.toDouble() : null;
+        final unit =
+            priceInfo != null ? (priceInfo['unit'] as String?) ?? '' : '';
+        final total = price != null ? price * qty : null;
+        result = {
+          'transaction_id': null,
+          'item': item,
+          'confidence': conf,
+          'low_confidence': conf < 0.5,
+          'top_k': top,
+          'qty': qty,
+          'price_per_unit': price,
+          'unit': unit,
+          'total': total,
+          'price_available': priceInfo != null,
+          'payment_options': [
+            'Telebirr',
+            'CBE Birr',
+            'Amole',
+            'M-Pesa Ethiopia'
+          ],
+        };
+      } else {
+        result = await _apiClient.predict(
+          image: image!,
+          vendorId: vendorId.isEmpty ? 'unknown' : vendorId,
+          qty: qty,
+          buyPricePerUnit: buyPricePerUnit,
+        );
+      }
     } catch (e) {
       error = e.toString();
     } finally {
       busy = false;
       notifyListeners();
     }
+  }
+
+  void setUseOnDevice(bool value) async {
+    useOnDevice = value;
+    if (useOnDevice && !_classifier.isLoaded) {
+      try {
+        await _classifier.load();
+      } catch (_) {
+        useOnDevice = false;
+      }
+    }
+    notifyListeners();
   }
 }

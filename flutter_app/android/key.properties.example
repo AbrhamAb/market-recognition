@@ -1,0 +1,6 @@
+# Copy this file to android/key.properties and fill the values
+# The storeFile path is relative to the android/ folder. Example: ../release-keystore.jks
+storePassword=your_store_password
+keyPassword=your_key_password
+keyAlias=marketrec
+storeFile=../release-keystore.jks

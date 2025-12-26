@@ -10,7 +10,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 
-import 'package:market_rec_app/main.dart';
+import 'package:wagaLine/main.dart';
 
 void main() {
   setUpAll(() async {

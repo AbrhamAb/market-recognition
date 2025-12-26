@@ -41,4 +41,18 @@ class ApiClient {
     }
     throw Exception('Predict failed with status ${resp.statusCode}');
   }
+
+  Future<Map<String, dynamic>?> getPrice(String itemKey) async {
+    try {
+      final resp = await _dio.get('$baseUrl/prices/$itemKey');
+      if (resp.statusCode != null &&
+          resp.statusCode! >= 200 &&
+          resp.statusCode! < 300) {
+        return Map<String, dynamic>.from(resp.data as Map);
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
 }

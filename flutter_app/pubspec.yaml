@@ -1,4 +1,4 @@
-name: market_rec_app
+name: wagaLine
 description: Flutter client for Market Recognition backend.
 publish_to: 'none'
 version: 0.1.0+1
@@ -11,15 +11,27 @@ dependencies:
     sdk: flutter
   dio: ^5.4.0
   image_picker: ^1.0.7
+  image: ^4.0.17
   provider: ^6.1.1
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+  tflite_flutter: ^0.12.1
+  camera: ^0.11.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
-  # Add assets here if needed, e.g. fonts or icons
+  assets:
+    - assets/models/product_classifier.tflite
+    - assets/models/labels.txt
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icons/Splash.png"
+  adaptive_icon_background: "#FFFFFF"

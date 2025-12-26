@@ -697,13 +697,26 @@ class _Header extends StatelessWidget {
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
         ),
         const Spacer(),
-        IconButton(
-          icon: const Icon(Icons.help_outline, color: midGray),
-          onPressed: () => showDialog<void>(
-            context: context,
-            builder: (ctx) => const AppHelpDialog(),
-          ),
-        ),
+        Consumer<PredictState>(builder: (context, state, _) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('On-device', style: TextStyle(color: midGray)),
+              const SizedBox(width: 6),
+              Switch.adaptive(
+                value: state.useOnDevice,
+                onChanged: (v) => state.setUseOnDevice(v),
+              ),
+              IconButton(
+                icon: const Icon(Icons.help_outline, color: midGray),
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (ctx) => const AppHelpDialog(),
+                ),
+              ),
+            ],
+          );
+        }),
       ],
     );
   }
