@@ -1,0 +1,9 @@
+{
+  "rows_samples": 2713,
+  "cols_feature_dim": 256,
+  "model_path": "C:\\Users\\mommy\\Documents\\market-recognition\\model\\run_10epochs\\product_classifier.keras",
+  "feature_layer": "dense",
+  "test_dir": "C:\\Users\\mommy\\Documents\\market-recognition\\dataset\\test",
+  "generator_samples": 2713,
+  "generator_batch_size": 32
+}
